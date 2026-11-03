@@ -1,0 +1,5 @@
+Contact: mailto:security@sentraix.com
+Preferred-Languages: en
+Canonical: https://sentraix.com/.well-known/security.txt
+Policy: https://sentraix.com/security.html
+Expires: 2027-01-01T00:00:00.000Z
