@@ -51,17 +51,18 @@ export default async (req) => {
   if (event.type === 'checkout.session.completed') {
     const s = event.data?.object ?? {};
     const d = s.customer_details ?? {};
+    // One plain string: some log viewers drop extra arguments.
     console.log(
-      `stripe-webhook${test ? ' (test)' : ''}: checkout completed`,
-      JSON.stringify({
-        session: s.id,
-        paid: s.payment_status,
-        email: d.email ?? null,
-        name: d.individual_name ?? d.name ?? null,
-        business: d.business_name ?? null,
-        customer: s.customer ?? null,
-        subscription: s.subscription ?? null,
-      }),
+      `stripe-webhook${test ? ' (test)' : ''}: checkout completed ` +
+        JSON.stringify({
+          session: s.id,
+          paid: s.payment_status,
+          email: d.email ?? null,
+          name: d.individual_name ?? null,
+          business: d.business_name ?? null,
+          customer: s.customer ?? null,
+          subscription: s.subscription ?? null,
+        }),
     );
     // NEXT: create the organization and the Keycloak user in the app from these fields (must be idempotent on session id).
   }
