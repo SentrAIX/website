@@ -58,7 +58,7 @@ export default async (req) => {
           'name_collection[business][enabled]': 'true',
           'name_collection[business][optional]': 'false',
           'name_collection[individual][enabled]': 'true',
-          'name_collection[individual][optional]': 'true',
+          'name_collection[individual][optional]': 'false',
           // {CHECKOUT_SESSION_ID} is filled in by Stripe
           return_url: `${url.origin}/${test ? 'testsubscribe' : 'subscribe'}-return?session_id={CHECKOUT_SESSION_ID}`,
         },
