@@ -11,11 +11,11 @@ const STRIPE = 'https://api.stripe.com/v1';
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
-async function stripe(path, { method = 'GET', form } = {}) {
+async function stripe(secretKey, path, { method = 'GET', form } = {}) {
   const res = await fetch(`${STRIPE}${path}`, {
     method,
     headers: {
-      authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      authorization: `Bearer ${secretKey}`,
       ...(form ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
     },
     body: form ? new URLSearchParams(form).toString() : undefined,
@@ -26,22 +26,27 @@ async function stripe(path, { method = 'GET', form } = {}) {
 }
 
 export default async (req) => {
-  const { STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID } = process.env;
+  const url = new URL(req.url);
+  // /api/checkout-test is the unlinked sandbox twin used by /testsubscribe; it reads the STRIPE_TEST_* variables.
+  const test = url.pathname === '/api/checkout-test';
+  const pre = test ? 'STRIPE_TEST_' : 'STRIPE_';
+  const STRIPE_SECRET_KEY = process.env[`${pre}SECRET_KEY`];
+  const STRIPE_PUBLISHABLE_KEY = process.env[`${pre}PUBLISHABLE_KEY`];
+  const STRIPE_PRICE_ID = process.env[`${pre}PRICE_ID`];
   if (!STRIPE_SECRET_KEY || !STRIPE_PUBLISHABLE_KEY || !STRIPE_PRICE_ID) return json({ error: 'Checkout is not set up on this site.' }, 503);
 
-  const url = new URL(req.url);
   try {
     if (req.method === 'GET' && url.searchParams.get('config')) return json({ publishableKey: STRIPE_PUBLISHABLE_KEY });
 
     if (req.method === 'GET') {
       const id = url.searchParams.get('session_id') ?? '';
       if (!/^cs_[A-Za-z0-9_]+$/.test(id)) return json({ error: 'Not a checkout session.' }, 400);
-      const s = await stripe(`/checkout/sessions/${id}`);
+      const s = await stripe(STRIPE_SECRET_KEY, `/checkout/sessions/${id}`);
       return json({ status: s.status, customerEmail: s.customer_details?.email ?? null });
     }
 
     if (req.method === 'POST') {
-      const s = await stripe('/checkout/sessions', {
+      const s = await stripe(STRIPE_SECRET_KEY, '/checkout/sessions', {
         method: 'POST',
         form: {
           mode: 'subscription',
@@ -55,7 +60,7 @@ export default async (req) => {
           'name_collection[individual][enabled]': 'true',
           'name_collection[individual][optional]': 'true',
           // {CHECKOUT_SESSION_ID} is filled in by Stripe
-          return_url: `${url.origin}/subscribe-return?session_id={CHECKOUT_SESSION_ID}`,
+          return_url: `${url.origin}/${test ? 'testsubscribe' : 'subscribe'}-return?session_id={CHECKOUT_SESSION_ID}`,
         },
       });
       return json({ clientSecret: s.client_secret });
@@ -68,4 +73,4 @@ export default async (req) => {
   }
 };
 
-export const config = { path: '/api/checkout' };
+export const config = { path: ['/api/checkout', '/api/checkout-test'] };
