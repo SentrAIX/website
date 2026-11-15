@@ -49,6 +49,11 @@ export default async (req) => {
           'line_items[0][price]': STRIPE_PRICE_ID,
           'line_items[0][quantity]': '1',
           'managed_payments[enabled]': 'true',
+          // same fields the hosted payment link asked for
+          'name_collection[business][enabled]': 'true',
+          'name_collection[business][optional]': 'false',
+          'name_collection[individual][enabled]': 'true',
+          'name_collection[individual][optional]': 'true',
           // {CHECKOUT_SESSION_ID} is filled in by Stripe
           return_url: `${url.origin}/subscribe-return?session_id={CHECKOUT_SESSION_ID}`,
         },
