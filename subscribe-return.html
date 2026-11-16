@@ -60,7 +60,7 @@
     if (!id) throw new Error('no session');
     var s = await (await fetch('/api/checkout?session_id=' + encodeURIComponent(id))).json();
     if (s.status === 'complete') {
-      h.textContent = 'Thank you. You are subscribed.';
+      h.textContent = new URLSearchParams(location.search).get('kind') === 'credits' ? 'Thank you. Your executions are being added.' : 'Thank you. You are subscribed.';
       p.textContent = s.customerEmail ? 'A receipt is on its way to ' + s.customerEmail + '.' : 'A receipt is on its way to your email.';
     } else if (s.status === 'open') {
       h.textContent = 'Your payment did not go through.';

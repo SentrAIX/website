@@ -3,7 +3,8 @@
 //   POST                      -> { clientSecret }                        (creates the Checkout Session)
 //   GET  ?session_id=cs_...   -> { status, customerEmail }               (the return page asks how it ended)
 // The Stripe keys and the price come from the site's environment settings on Netlify, never from this repository:
-//   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID.
+//   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID, and STRIPE_CREDITS_PRICE_ID for execution packs
+//   (a one-off price whose metadata "executions" is the pack size). The STRIPE_TEST_* twins serve /api/checkout-test.
 // It calls Stripe's REST API directly, so there is nothing to install.
 
 const STRIPE = 'https://api.stripe.com/v1';
@@ -46,23 +47,55 @@ export default async (req) => {
     }
 
     if (req.method === 'POST') {
-      const s = await stripe(STRIPE_SECRET_KEY, '/checkout/sessions', {
-        method: 'POST',
-        form: {
+      // Optional, from the page's URL when the purchase was started in the app (POST /api/account/checkout):
+      //   ref   - the app's checkout intent; the provisioning API applies the purchase to that organization
+      //   email - the signed-in user's email, prefilled
+      //   kind  - 'credits' for a one-off execution pack (needs ref), otherwise the Individual subscription
+      const body = await req.json().catch(() => ({}));
+      const ref = typeof body.ref === 'string' && /^[0-9a-f-]{36}$/i.test(body.ref) ? body.ref : null;
+      const email = typeof body.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) ? body.email : null;
+      const credits = body.kind === 'credits';
+      const returnUrl = `${url.origin}/${test ? 'testsubscribe' : 'subscribe'}-return?session_id={CHECKOUT_SESSION_ID}${credits ? '&kind=credits' : ''}`;
+
+      const form = {
+        ui_mode: 'embedded_page',
+        'line_items[0][quantity]': '1',
+        'managed_payments[enabled]': 'true',
+        // same fields the hosted payment link asked for
+        'name_collection[business][enabled]': 'true',
+        'name_collection[business][optional]': 'false',
+        'name_collection[individual][enabled]': 'true',
+        'name_collection[individual][optional]': 'false',
+        // {CHECKOUT_SESSION_ID} is filled in by Stripe
+        return_url: returnUrl,
+        ...(ref ? { client_reference_id: ref } : {}),
+        ...(email ? { customer_email: email } : {}),
+      };
+
+      if (credits) {
+        // A pack is bought for an existing organization only. Its size is the price's metadata "executions",
+        // copied onto the session so the provisioning API knows how many to add.
+        const packPrice = process.env[`${pre}CREDITS_PRICE_ID`];
+        if (!ref || !packPrice) return json({ error: 'Execution packs can only be bought from the app.' }, 400);
+        const price = await stripe(STRIPE_SECRET_KEY, `/prices/${encodeURIComponent(packPrice)}`);
+        const executions = parseInt(price?.metadata?.executions ?? '', 10);
+        if (!(executions > 0)) return json({ error: 'Execution packs are not set up yet.' }, 503);
+        Object.assign(form, {
+          mode: 'payment',
+          'line_items[0][price]': packPrice,
+          'metadata[kind]': 'credits',
+          'metadata[executions]': String(executions),
+        });
+      } else {
+        Object.assign(form, {
           mode: 'subscription',
-          ui_mode: 'embedded_page',
           'line_items[0][price]': STRIPE_PRICE_ID,
-          'line_items[0][quantity]': '1',
-          'managed_payments[enabled]': 'true',
-          // same fields the hosted payment link asked for
-          'name_collection[business][enabled]': 'true',
-          'name_collection[business][optional]': 'false',
-          'name_collection[individual][enabled]': 'true',
-          'name_collection[individual][optional]': 'false',
-          // {CHECKOUT_SESSION_ID} is filled in by Stripe
-          return_url: `${url.origin}/${test ? 'testsubscribe' : 'subscribe'}-return?session_id={CHECKOUT_SESSION_ID}`,
-        },
-      });
+          'metadata[plan]': 'individual',
+          'subscription_data[metadata][plan]': 'individual',
+        });
+      }
+
+      const s = await stripe(STRIPE_SECRET_KEY, '/checkout/sessions', { method: 'POST', form });
       return json({ clientSecret: s.client_secret });
     }
 
