@@ -349,7 +349,7 @@ function pageHero({crumb, title, lead, art, actions, lockup}) {
     <div class="rv">${art||''}</div>
   </div></section>`;
 }
-function ctaBand(title='Pick the journey that worries you most. Start there.', text='Basic is free. Two applications, unlimited AI test case generation and enough credits to run your first ten test cases.', actions) {
+function ctaBand(title='Pick the journey that worries you most. Start there.', text='Free is free forever. Two applications, AI-generated and automated test cases, and 50 test case executions to run them.', actions) {
   return `<section class="section"><div class="wrap cta-band">
     <div class="rv"><h2 class="h1">${title}</h2><p class="sec-a" style="margin-top:20px">${text}</p><div class="actions">${actions ?? cta2()}</div></div>
     <div class="rv" style="max-width:360px;justify-self:center">${ART.wave()}</div>
