@@ -102,7 +102,8 @@ export default async (req) => {
     return json({ error: 'Method not allowed.' }, 405);
   } catch (e) {
     console.error('checkout:', e instanceof Error ? e.message : e);
-    return json({ error: 'Checkout could not be started. Please try again, or contact us.' }, 502);
+    // The sandbox twin says what Stripe answered, so a setup mistake can be seen without the function logs
+    return json({ error: 'Checkout could not be started. Please try again, or contact us.', ...(test ? { detail: e instanceof Error ? e.message : String(e) } : {}) }, 502);
   }
 };
 
