@@ -64,7 +64,7 @@
     var checkout = await stripe.createEmbeddedCheckoutPage({
       fetchClientSecret: async function () {
         var q = new URLSearchParams(location.search);
-        var r = await fetch('/api/checkout-test', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: q.get('ref'), email: q.get('email'), kind: q.get('kind') }) });
+        var r = await fetch('/api/checkout-test', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: q.get('ref'), email: q.get('email'), kind: q.get('kind'), plan: q.get('plan') }) });
         var d = await r.json();
         if (!d.clientSecret) throw new Error(d.error || 'no session');
         return d.clientSecret;

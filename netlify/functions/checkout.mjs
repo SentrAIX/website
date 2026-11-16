@@ -3,8 +3,9 @@
 //   POST                      -> { clientSecret }                        (creates the Checkout Session)
 //   GET  ?session_id=cs_...   -> { status, customerEmail }               (the return page asks how it ended)
 // The Stripe keys and the price come from the site's environment settings on Netlify, never from this repository:
-//   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID, and STRIPE_CREDITS_PRICE_ID for execution packs
-//   (a one-off price whose metadata "executions" is the pack size). The STRIPE_TEST_* twins serve /api/checkout-test.
+//   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID (Individual), STRIPE_TEAM_PRICE_ID (Team, sold only as an
+//   in-app upgrade), and STRIPE_CREDITS_PRICE_ID for execution packs (a one-off price whose metadata "executions" is the
+//   pack size). The STRIPE_TEST_* twins serve /api/checkout-test.
 // It calls Stripe's REST API directly, so there is nothing to install.
 
 const STRIPE = 'https://api.stripe.com/v1';
@@ -87,11 +88,17 @@ export default async (req) => {
           'metadata[executions]': String(executions),
         });
       } else {
+        // Team is never sold from the website's own pages ("contact sales"): only as an upgrade started in the app,
+        // which is what the ref proves. Everything else is the Individual plan.
+        const team = body.plan === 'team';
+        const teamPrice = process.env[`${pre}TEAM_PRICE_ID`];
+        if (team && (!ref || !teamPrice)) return json({ error: 'The Team plan is available from the app, or by contacting us.' }, 400);
+        const plan = team ? 'team' : 'individual';
         Object.assign(form, {
           mode: 'subscription',
-          'line_items[0][price]': STRIPE_PRICE_ID,
-          'metadata[plan]': 'individual',
-          'subscription_data[metadata][plan]': 'individual',
+          'line_items[0][price]': team ? teamPrice : STRIPE_PRICE_ID,
+          'metadata[plan]': plan,
+          'subscription_data[metadata][plan]': plan,
         });
       }
 
