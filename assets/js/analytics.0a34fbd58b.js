@@ -1,7 +1,8 @@
 /* Google Analytics 4 with Google consent mode, and a small cookie banner.
    - EEA, UK and Switzerland: nothing is stored until the visitor accepts (consent defaults to denied there).
    - Elsewhere: analytics runs by default; the visitor can decline in the banner or later via "Cookie settings".
-   - Ads storage is never granted: this is analytics only.
+   - Ads storage and ads user data follow the same rule: Google signals needs them for its demographics and interests
+     reports. Ads personalization (remarketing) is never granted.
    UTM tags (utm_source, utm_medium, utm_campaign, ...) are read by GA4 itself from the landing URL. */
 (function () {
   var GA_ID = 'G-QPH4NJWWVS';
@@ -15,9 +16,11 @@
   var saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* storage blocked: ask every visit */ }
 
-  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', region: STRICT, wait_for_update: 500 });
-  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
-  if (saved === 'granted' || saved === 'denied') gtag('consent', 'update', { analytics_storage: saved });
+  function state(v) { return { analytics_storage: v, ad_storage: v, ad_user_data: v, ad_personalization: 'denied' }; }
+  var strict = state('denied'); strict.region = STRICT; strict.wait_for_update = 500;
+  gtag('consent', 'default', strict);
+  gtag('consent', 'default', state('granted'));
+  if (saved === 'granted' || saved === 'denied') gtag('consent', 'update', state(saved));
 
   gtag('js', new Date());
   gtag('config', GA_ID);
@@ -28,7 +31,7 @@
 
   function choose(v) {
     try { localStorage.setItem(KEY, v); } catch (e) { /* ignore */ }
-    gtag('consent', 'update', { analytics_storage: v });
+    gtag('consent', 'update', state(v));
     var b = document.getElementById('sx-consent');
     if (b) b.remove();
   }
@@ -40,7 +43,7 @@
     b.setAttribute('role', 'region');
     b.setAttribute('aria-label', 'Cookie choice');
     b.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:90;max-width:640px;margin:0 auto;background:#fff;border:1px solid #D6D3CB;border-radius:8px;box-shadow:0 16px 32px -20px rgba(30,41,59,.45);padding:16px 18px;display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;font:500 15px/1.45 Manrope,ui-sans-serif,system-ui,sans-serif;color:#1E1E1E';
-    b.innerHTML = '<p style="margin:0;flex:1 1 260px">We use analytics cookies to see how visitors find and use this site. <a href="/privacy" style="color:inherit">Privacy</a></p>' +
+    b.innerHTML = '<p style="margin:0;flex:1 1 260px">We use Google Analytics cookies to see how visitors find and use this site, including aggregated demographics. <a href="/privacy" style="color:inherit">Privacy</a></p>' +
       '<span style="display:flex;gap:10px"><button type="button" data-v="denied" style="min-height:38px;padding:0 16px;border-radius:5px;border:1px solid #C9C6BE;background:#fff;color:#1E1E1E;font:inherit;cursor:pointer">Decline</button>' +
       '<button type="button" data-v="granted" style="min-height:38px;padding:0 16px;border-radius:5px;border:1px solid #1E293B;background:#1E293B;color:#fff;font:inherit;cursor:pointer">Accept</button></span>';
     b.addEventListener('click', function (e) {
