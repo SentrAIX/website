@@ -48,12 +48,19 @@
 </header>
 
 <main id="main" tabindex="-1"><section style="padding:48px 0 72px"><div class="wrap" style="max-width:760px">
-<h1>Subscribe to TestAIx Individual</h1>
-<p class="sec-a" style="margin:12px 0 28px">$39 a month at launch pricing. Billed monthly.</p>
+<h1 id="buy-title">Subscribe to TestAIx Individual</h1>
+<p class="sec-a" id="buy-sub" style="margin:12px 0 28px">$39 a month at launch pricing. Billed monthly.</p>
 <div id="checkout"></div>
 <p id="err" role="alert" hidden style="margin-top:16px">Checkout could not load. Please try again, or <a href="/contact?interest=Pricing&amp;plan=Individual">contact us</a>.</p>
 </div></section>
-<script src="https://js.stripe.com/endive/stripe.js"></script>
+<script>
+// The heading follows what is bought: an execution pack (kind=credits), Team, or Individual (the default)
+(function () {
+  var q = new URLSearchParams(location.search), t = document.getElementById('buy-title'), s = document.getElementById('buy-sub');
+  if (q.get('kind') === 'credits') { t.textContent = 'Buy 200 extra test case executions'; if (s) s.textContent = '$25, paid once. They add to your plan and carry over until used.'; document.title = 'Buy test case executions | SentrAIx'; }
+  else if (q.get('plan') === 'team') { t.textContent = 'Subscribe to TestAIx Team'; if (s) s.textContent = '$99 a month at launch pricing. Billed monthly.'; document.title = 'Subscribe to TestAIx Team | SentrAIx'; }
+})();
+</script><script src="https://js.stripe.com/endive/stripe.js"></script>
 <script>
 (async function () {
   var err = document.getElementById('err');

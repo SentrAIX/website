@@ -48,12 +48,19 @@
 </header>
 
 <main id="main" tabindex="-1"><section style="padding:48px 0 72px"><div class="wrap" style="max-width:760px">
-<h1>TEST MODE - Subscribe to TestAIx Individual</h1>
+<h1 id="buy-title">TEST MODE - Subscribe to TestAIx Individual</h1>
 <p class="sec-a" style="margin:12px 0 28px">Sandbox page: no real charge. Use card 4242 4242 4242 4242, any future date, any CVC.</p>
 <div id="checkout"></div>
 <p id="err" role="alert" hidden style="margin-top:16px">Checkout could not load. Please try again, or <a href="/contact?interest=Pricing&amp;plan=Individual">contact us</a>.</p>
 </div></section>
-<script src="https://js.stripe.com/endive/stripe.js"></script>
+<script>
+// The heading follows what is bought: an execution pack (kind=credits), Team, or Individual (the default)
+(function () {
+  var q = new URLSearchParams(location.search), t = document.getElementById('buy-title'), s = document.getElementById('buy-sub');
+  if (q.get('kind') === 'credits') { t.textContent = 'TEST MODE - Buy extra test case executions'; document.title = 'Buy test case executions | SentrAIx'; }
+  else if (q.get('plan') === 'team') { t.textContent = 'TEST MODE - Subscribe to TestAIx Team'; document.title = 'Subscribe to TestAIx Team | SentrAIx'; }
+})();
+</script><script src="https://js.stripe.com/endive/stripe.js"></script>
 <script>
 (async function () {
   var err = document.getElementById('err');
