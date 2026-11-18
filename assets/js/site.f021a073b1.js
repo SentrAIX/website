@@ -326,7 +326,7 @@ const UI = {
 
 /* ===== js/components/shared.js ===== */
 const LINKS = {
-  app:'https://app101.smarttestaix.sentraix.com',
+  app:'https://app.testaix.sentraix.com',
   saas:'https://marketplace.microsoft.com/en-us/product/sentraixllc-aurora.smarttestaixsaas3?tab=Overview',
   managed:'https://marketplace.microsoft.com/en-us/product/sentraixllc-aurora.smarttestaixmanapp2?tab=Overview',
   tour:'https://www.youtube.com/embed/BpFJGGc6UbI?rel=0',
